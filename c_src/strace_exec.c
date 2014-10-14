@@ -1,8 +1,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-#define ARGV_EXTRA (4)
+#define ARGV_EXTRA (7)
 
 int main(int argc, char** argv, char** envp) {
 
@@ -14,8 +15,11 @@ int main(int argc, char** argv, char** envp) {
     char* suffix = ".real";
 
     newargv[0] = "/usr/bin/strace";
-    newargv[1] = "-o";
-    newargv[2] = "/tmp/strace_exec.out";
+    newargv[1] = "-t";
+    newargv[2] = "-f";
+    newargv[3] = "-etrace=!futex,clock_gettime,gettimeofday";
+    newargv[4] = "-o";
+    newargv[5] = "/tmp/strace_exec.out";
 
     if (strace_target == NULL) {
         /* in this case we will try and strace this program, but with a different suffix */
@@ -25,10 +29,10 @@ int main(int argc, char** argv, char** envp) {
         strncat(strace_target, suffix, len - strlen(argv[0]) - 1);
     }
     
-    newargv[3] = strace_target;
+    newargv[6] = strace_target;
 
     if (optional_output_filename != NULL) {
-        newargv[2] = optional_output_filename;
+        newargv[5] = optional_output_filename;
     }
 
     if (sleep_time != NULL) {
