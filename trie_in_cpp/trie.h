@@ -1,6 +1,7 @@
+
 /**
     Container style Trie implementation (C++)
-    
+
     Supports a key of T[] (using std::vector)
 
     E.g. a tradional C string char[] requires a vector<char>
@@ -20,7 +21,7 @@ using namespace std;
 #ifndef TRIE_H
 #define TRIE_H
 
-template <typename K, typename V> 
+template <typename K, typename V>
 class Trie {
 
 public:
@@ -43,7 +44,7 @@ public:
     /**
         Remove key item from the trie.
         Returns true if ley was removed, else false.
-    **/ 
+    **/
     bool remove(vector<K> key);
 
     /**
@@ -51,6 +52,12 @@ public:
         Return true if found.
     **/
     bool find(vector<K> key, V* value);
+
+    /**
+        Find a match looking at the key's prefix ignoring
+        characters after a match.
+    **/
+    bool prefixed_find(vector<K> key, V* value);
 
 private:
 
@@ -131,7 +138,7 @@ private:
         K identifier;
         vector<TrieNode*> children;
 
-        /* 
+        /*
             Pointer to value as I'm assuming V maybe costly to store for every node
             (only terminating nodes have a value)
         */
