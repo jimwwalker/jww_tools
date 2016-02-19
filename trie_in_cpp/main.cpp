@@ -37,6 +37,7 @@ int main()
     delete_and_print(t, "ham");
     find_and_print(t, "hamster");
     find_and_print(t, "ham");
+     delete_and_print(t, "ham::");
 return 0;
     // 65k keys
     for (int i = 0; i < 1<<16; i++) {
