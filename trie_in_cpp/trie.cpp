@@ -17,12 +17,9 @@ TrieNode<K>::TrieNode(K id) {
 
 template <typename K>
 TrieNode<K>* TrieNode<K>::findChild(K id) {
-    for(auto itr = children.begin();
-        itr != children.end();
-        ++itr) {
-        if ((*itr)->getId() == id) {
-            return *itr;
-        }
+    auto itr = children.find(id);
+    if (itr != children.end()) {
+        return itr->second;
     }
     return nullptr;
 }
@@ -30,7 +27,7 @@ TrieNode<K>* TrieNode<K>::findChild(K id) {
 template <typename K>
 void TrieNode<K>::addChild(TrieNode* newNode) {
     // validate newNode exists?
-    children.push_back(newNode);
+    children[newNode->getId()] = newNode;
 }
 
 template <typename K>
@@ -44,18 +41,11 @@ int TrieNode<K>::childCount() {
 }
 
 //
-// Break the link from this node to a child node.ng id.
+// Break the link from this node to a child node.
 //
 template <typename K>
 void TrieNode<K>::unlinkChild(K id) {
-   for (auto itr = children.begin();
-        itr != children.end();
-        ++itr) {
-        if ((*itr)->identifier == id) {
-            children.erase(itr);
-            return;
-        }
-    }
+    children.erase(id);
 }
 
 template <typename K>
@@ -70,183 +60,37 @@ bool TrieNode<K>::isTerminator() {
 
 template <typename K, typename V>
 void TrieMapNode<K,V>::setValue(V value) {
-    assert(this->value == nullptr);
-    // throws
-    this->value = new V(value);
+    this->value = value;
 }
 
 template <typename K, typename N>
 TrieImpl<K,N>::TrieImpl() {
-    this->root = new N();
-}
-
-template <typename K, typename N>
-TrieImpl<K,N>::~TrieImpl() {
-    //TrieNode* node = root;
-    // UMM FIX ME
-}
-
-/**
- * bool Trie::insert(key)
- */
-template <typename K>
-void Trie<K>::insert(const std::vector<K>& key) {
-    (void)this->insertKey(key);
-}
-
-void Trie<char>::insert(const std::string& key) {
-    (void)this->insertKey(key);
-}
-
-/**
- * bool Trie::remove(key)
- */
-template <typename K>
-void Trie<K>::remove(const std::vector<K>& key) {
-    this->removeKey(key);
-}
-
-void Trie<char>::remove(const std::string& key) {
-    this->removeKey(key);
-}
-
-/**
- * bool TrieMap::find(key)
- */
-template <typename K>
-bool Trie<K>::find(const std::vector<K>& key) {
-    TrieNode<K>* node = this->findKey(key);
-    // Check if a node was found and that it is a terminator.
-    // e.g. insert("hamster")
-    //      find("ham") -> false, m is not a terminator
-    //      find("hamster") -> true, r is a terminator
-    return (node && node->isTerminator());
-}
-
-bool Trie<char>::find(const std::string& key) {
-    TrieNode<char>* node = this->findKey(key);
-    // Check if a node was found and that it is a terminator.
-    // e.g. insert("hamster")
-    //      find("ham") -> false, m is not a terminator
-    //      find("hamster") -> true, r is a terminator
-    return (node && node->isTerminator());
-}
-
-/**
- * bool TrieMap::insert(key, value)
- */
-template <typename K, typename V>
-void TrieMap<K,V>::insert(const std::vector<K>& key, V value) {
-    TrieMapNode<K, V>* node = this->insertKey(key);
-    if (node) {
-        node->setValue(value);
-    }
-}
-
-template <typename V>
-void TrieMap<char,V>::insert(const std::string& key, V value) {
-    TrieMapNode<char, V>* node = this->insertKey(key);
-    if (node) {
-        node->setValue(value);
-    }
-}
-
-/**
- * bool TrieMap::remove(key)
- */
-template <typename K, typename V>
-void TrieMap<K, V>::remove(const std::vector<K>& key) {
-    TrieMapNode<K, V>* node = this->removeKey(key);
-
-    // If removeKey returns a node and the node is not a terminator
-    // drop the value.
-    if (node) {
-        node->deleteValue();
-    }
-}
-
-template <typename V>
-void TrieMap<char, V>::remove(const std::string& key) {
-    TrieMapNode<char, V>* node = this->removeKey(key);
-    // If removeKey returns a node and the node is not a terminator
-    // drop the value.
-    if (node) {
-        node->deleteValue();
-    }
-}
-
-/**
- * bool TrieMap::find(key, *value)
- */
-template <typename K, typename V>
-bool TrieMap<K, V>::find(const std::vector<K>& key, V* value) {
-    TrieMapNode<K, V>* node = this->findKey(key);
-    // Check if a node was found and that it is a terminator
-    // then get the terminator's value
-    // e.g. insert("hamster", 101)
-    //      find("ham") -> false, m is not a terminator
-    //      find("hamster") -> true, m is a terminator with value 101
-    if (node && node->isTerminator()) {
-        *value = node->getValue();
-        return true;
-    } else {
-        return false;
-    }
-}
-
-/**
- * bool Trie::prefixFind(key)
- *
- * Trie::insert("ham")
- * Trie::prefixFind("hamster") -> true
- * Trie::prefixFind("hatter") -> false
- *
- */
-template <typename K>
-bool Trie<K>::prefixFind(const std::vector<K>& key) {
-    return (this->prefixFindKey(key) != nullptr);
-}
-
-bool Trie<char>::prefixFind(const std::string& key) {
-    return (this->prefixFindKey(key) != nullptr);
-}
-
-/**
- * bool TrieMap::prefixFind(key)
- *
- * TrieMap::insert("ham", 88)
- * TrieMap::prefixFind("hamster") -> true, value = 88
- *
- */
-template <typename K, typename V>
-bool TrieMap<K, V>::prefixFind(const std::vector<K>& key, V* value) {
-    TrieMapNode<K, V>* node = this->prefixFindKey(key);
-    if (node) {
-        *value = node->getValue();
-        return true;
-    } else {
-        return false;
-    }
-}
-
-template <typename V>
-bool TrieMap<char, V>::prefixFind(const std::string& key, V* value) {
-    TrieMapNode<char, V>* node = this->prefixFindKey(key);
-    if (node) {
-        *value = node->getValue();
-        return true;
-    } else {
-        return false;
-    }
 }
 
 /**
  * Protected
- * TrieCommon::insertKey
+ * TrieCommon::findKey
  */
 template <typename Container, typename NodeType>
+NodeType* TrieImpl<Container, NodeType>::findKey(const Container& key) {
+    NodeType* node = &root;
+
+    // Iterate from root looking for each element of key
+    for (auto element : key) {
+        NodeType* n = nullptr;
+        if ((n = static_cast<NodeType*>(node->findChild(element))) == nullptr) {
+            return nullptr;
+        }
+        node = n;
+    }
+
+    //  loop done, node is the last found element of key
+    return node;
+}
+
+template <typename Container, typename NodeType>
 NodeType* TrieImpl<Container, NodeType>::insertKey(const Container& key) {
-    NodeType* node = root;
+    NodeType* node = &root;
 
     // 1. Walk the trie looking for each element of key.
     // and stop when a node is found that has no child for the element.
@@ -279,14 +123,37 @@ NodeType* TrieImpl<Container, NodeType>::insertKey(const Container& key) {
 }
 
 template <typename Container, typename NodeType>
+NodeType* TrieImpl<Container, NodeType>::prefixFindKey(const Container& key) {
+    NodeType* node = &root;
+
+    // Iterate from root looking for each element of key
+    for (auto element : key) {
+        NodeType* n = nullptr;
+        if ((n = static_cast<NodeType*>(node->findChild(element))) == nullptr) {
+            return nullptr;
+        }
+
+        node = n;
+
+        // stop node is a terminator
+        if (node->isTerminator()) {
+            return node;
+        }
+    }
+
+    std::cout << "HERE??\n";
+    return nullptr;
+}
+
+template <typename Container, typename NodeType>
 NodeType* TrieImpl<Container, NodeType>::removeKey(const Container& key) {
-    NodeType* node = root;
+    NodeType* node = &root;
     bool perfomedDelete = false;
     auto itr = key.begin();
 
     // If root has a child which matches the first element of key.
     // Go ahead and try to delete.
-    NodeType* child = root->findChild(*itr);
+    NodeType* child = root.findChild(*itr);
     if (child) {
         // run delete node which will recurse the trie and determine how to remove
         // the key
@@ -322,13 +189,12 @@ NodeType* TrieImpl<Container, NodeType>::removeKey(const Container& key) {
             // n is not a terminator so caller can have it.
             return n;
         } else if (!n) {
-            root->unlinkChild(child->getId());
+            root.unlinkChild(child->getId());
             delete child;
         }
     }
     return nullptr;
 }
-
 
 /**
  * Walk the trie using key and determine how key should be removed.
@@ -390,265 +256,135 @@ NodeType* TrieImpl<Container, NodeType>::deleteNode(NodeType* node,
     return node;
 }
 
-/**
- * Protected
- * TrieCommon::findKey
- */
-template <typename Container, typename NodeType>
-NodeType* TrieImpl<Container, NodeType>::findKey(const Container& key) {
-    NodeType* node = root;
-
-    // Iterate from root looking for each element of key
-    for (auto element : key) {
-        NodeType* n = nullptr;
-        if ((n = static_cast<NodeType*>(node->findChild(element))) == nullptr) {
-            return nullptr;
-        }
-        node = n;
-    }
-
-    //  loop done, node is the last found element of key
-    return node;
+template <typename K>
+bool Trie<K>::exists(const std::vector<K>& key) {
+    TrieNode<K>* node = this->findKey(key);
+    // Check if a node was found and that it is a terminator.
+    // e.g. insert("hamster")
+    //      find("ham") -> false, m is not a terminator
+    //      find("hamster") -> true, r is a terminator
+    return (node && node->isTerminator());
 }
 
-template <typename Container, typename NodeType>
-NodeType* TrieImpl<Container, NodeType>::prefixFindKey(const Container& key) {
-    NodeType* node = root;
-
-    // Iterate from root looking for each element of key
-    for (auto element : key) {
-        NodeType* n = nullptr;
-        if ((n = static_cast<NodeType*>(node->findChild(element))) == nullptr) {
-            return nullptr;
-        }
-
-        node = n;
-
-        // stop node is a terminator
-        if (node->isTerminator()) {
-            return node;
-        }
-    }
-
-    std::cout << "HERE??\n";
-    return nullptr;
+bool Trie<char>::exists(const std::string& key) {
+    TrieNode<char>* node = this->findKey(key);
+    // Check if a node was found and that it is a terminator.
+    // e.g. insert("hamster")
+    //      find("ham") -> false, m is not a terminator
+    //      find("hamster") -> true, r is a terminator
+    return (node && node->isTerminator());
 }
 
-#if 0
-template <typename K, typename V>
-Trie<K,V>::TrieNode::TrieNode() {
-    terminates = false;
-    value = NULL;
+template <typename K>
+void Trie<K>::insert(const std::vector<K>& key) {
+    (void)this->insertKey(key);
+}
+
+void Trie<char>::insert(const std::string& key) {
+    (void)this->insertKey(key);
+}
+
+template <typename K>
+bool Trie<K>::prefixExists(const std::vector<K>& key) {
+    return (this->prefixFindKey(key) != nullptr);
+}
+
+bool Trie<char>::prefixExists(const std::string& key) {
+    return (this->prefixFindKey(key) != nullptr);
+}
+
+template <typename K>
+void Trie<K>::remove(const std::vector<K>& key) {
+    this->removeKey(key);
+}
+
+void Trie<char>::remove(const std::string& key) {
+    this->removeKey(key);
 }
 
 template <typename K, typename V>
-Trie<K,V>::TrieNode::TrieNode(K id) {
-    identifier = id;
-    terminates = false;
-    value = NULL;
-}
-
-template <typename K, typename V>
-Trie<K,V>::TrieNode::~TrieNode() {
-    if (value != NULL) {
-        delete value;
+typename TrieMap<K, V>::iterator  TrieMap<K, V>::find(const std::vector<K>& key) {
+    TrieMapNode<K, V>* node = this->findKey(key);
+    // Check if a node was found and that it is a terminator
+    // then get the terminator's value
+    // e.g. insert("hamster", 101)
+    //      find("ham") -> false, m is not a terminator
+    //      find("hamster") -> true, m is a terminator with value 101
+    if (node && node->isTerminator()) {
+        return TrieMap<K, V>::iterator(node);
+    } else {
+        return end();
     }
 }
 
-template <typename K, typename V>
-bool Trie<K,V>::TrieNode::getChild(K id, TrieNode** node) {
-    for(auto itr = children.begin();
-        itr != children.end();
-        ++itr) {
-        if ((*itr)->identifier == id) {
-            *node = *itr;
-            return true;
-        }
-    }
-    return false;
-}
-
-template <typename K, typename V>
-K Trie<K,V>::TrieNode::getId(){
-    return identifier;
-}
-
-template <typename K, typename V>
-typename Trie<K,V>::TrieNode* Trie<K,V>::TrieNode::addChild(K id) {
-    TrieNode* newNode = new TrieNode(id);
-    children.push_back(newNode);
-    return newNode;
-}
-
-template <typename K, typename V>
-void Trie<K,V>::TrieNode::setValue(V value) {
-    assert(this->value == NULL);
-    this->value = new V(value);
-}
-
-template <typename K, typename V>
-V Trie<K,V>::TrieNode::getValue() {
-    assert(isTerminator());
-    assert(value != NULL);
-    return *value;
-}
-
-template <typename K, typename V>
-void Trie<K,V>::TrieNode::deleteValue() {
-    assert(isTerminator());
-    assert(value != NULL);
-    delete value;
-}
-
-template <typename K, typename V>
-bool Trie<K,V>::TrieNode::hasChildren() {
-    return !children.empty();
-}
-
-template <typename K, typename V>
-int Trie<K,V>::TrieNode::childCount() {
-    return children.size();
-}
-
-//
-// Break the link from this node to a child node.ng id.
-//
-template <typename K, typename V>
-void Trie<K,V>::TrieNode::unlinkChild(K id) {
-   for (auto itr = children.begin();
-        itr != children.end();
-        ++itr) {
-        if ((*itr)->identifier == id) {
-            children.erase(itr);
-            return;
-        }
+template <typename V>
+typename TrieMap<char, V>::iterator TrieMap<char, V>::find(const std::string& key) {
+    TrieMapNode<char, V>* node = this->findKey(key);
+    // Check if a node was found and that it is a terminator
+    // then get the terminator's value
+    // e.g. insert("hamster", 101)
+    //      find("ham") -> false, m is not a terminator
+    //      find("hamster") -> true, m is a terminator with value 101
+    if (node && node->isTerminator()) {
+        return TrieMap<char, V>::iterator(node);
+    } else {
+        return end();
     }
 }
 
 template <typename K, typename V>
-void Trie<K,V>::TrieNode::setTerminates(bool value) {
-    terminates = value;
-}
-
-template <typename K, typename V>
-bool Trie<K,V>::TrieNode::isTerminator() {
-    return terminates;
-}
-
-template <typename K, typename V>
-Trie<K,V>::Trie() {
-    this->root = new TrieNode();
-}
-
-template <typename K, typename V>
-Trie<K,V>::~Trie() {
-    TrieNode* node = root;
-}
-
-template <typename K, typename V>
-bool Trie<K,V>::find(const std::vector<K>& key, V* value) {
-    TrieNode* node = root;
-
-    for (auto itr = key.begin();
-        itr != key.end();
-        ++itr) {
-
-        if (!node->getChild(*itr, &node)) {
-            return false;
-        }
+void TrieMap<K,V>::insert(const std::vector<K>& key, V value) {
+    TrieMapNode<K, V>* node = this->insertKey(key);
+    if (node) {
+        node->setValue(value);
     }
+}
 
-    if (node->isTerminator()) {
-        *value = node->getValue();
+template <typename V>
+void TrieMap<char,V>::insert(const std::string& key, V value) {
+    TrieMapNode<char, V>* node = this->insertKey(key);
+    if (node) {
+        node->setValue(value);
     }
-
-    return node->isTerminator();
 }
 
 template <typename K, typename V>
-bool Trie<K,V>::prefixed_find(const std::vector<K>& key, V* value) {
-    TrieNode* node = root;
-
-    for (auto itr = key.begin();
-        itr != key.end();
-        ++itr) {
-
-        if (!node->getChild(*itr, &node)) {
-            return false;
-        }
-
-        if (node->isTerminator()) {
-            *value = node->getValue();
-            return true;
-        }
+typename TrieMap<K, V>::iterator TrieMap<K, V>::prefixFind(const std::vector<K>& key) {
+    TrieMapNode<K, V>* node = this->prefixFindKey(key);
+    if (node) {
+        return TrieMap<K, V>::iterator(node);;
+    } else {
+        return end();
     }
+}
 
-    if (node->isTerminator()) {
-        *value = node->getValue();
+template <typename V>
+typename TrieMap<char, V>::iterator TrieMap<char, V>::prefixFind(const std::string& key) {
+    TrieMapNode<char, V>* node = this->prefixFindKey(key);
+    if (node) {
+        return TrieMap<char, V>::iterator(node);
+    } else {
+        return end();
     }
-
-    return node->isTerminator();
 }
 
 template <typename K, typename V>
-bool Trie<K,V>::remove(const std::vector<K>& key) {
-    TrieNode* node = root;
-    perfomedDelete = false;
-    auto itr = key.begin();
+void TrieMap<K, V>::remove(const std::vector<K>& key) {
+    TrieMapNode<K, V>* node = this->removeKey(key);
 
-    TrieNode* child = NULL;
-    if (node->getChild(*itr, &child)) {
-        perfomedDelete = deleteNode(child, key.end(), ++itr);
-    }
-    return perfomedDelete;
-}
-
-template <typename K, typename V>
-void Trie<K,V>::insert(const std::vector<K>& insert, V value) {
-    TrieNode* node = root;
-    TrieNode* last_valid_node;
-
-    auto itr = insert.begin();
-    for (; itr != insert.end(); ++itr) {
-        if (!node->getChild(*itr, &node)) {
-            break;
-        }
-    }
-
-    for (; itr != insert.end(); ++itr) {
-        node = node->addChild(*itr);
-    }
-
-    node->setValue(value);
-    node->setTerminates(true);
-}
-
-//
-// deleteNode is a helper function for recursing a key and removing the key/value from the Trie
-// We walk the Trie using the key trying to find the end of the key and deciding how to remove it
-//
-template <typename K, typename V>
-bool Trie<K,V>::deleteNode(TrieNode* node, typename const std::vector<K>&::iterator keyEnd, typename const std::vector<K>&::iterator itr) {
-    TrieNode* child = NULL;
-    if (node->getChild(*itr, &child)) {
-        // Recursively call down, incrementing where we are in the key
-        if (deleteNode(child, keyEnd, ++itr)) {
-            node->unlinkChild(child->getId());
-            delete child;
-            perfomedDelete = true;
-            return !node->hasChildren() && !node->isTerminator();
-        }
-    } else if (!node->hasChildren() && itr == keyEnd) {
-        // return true. No children and the key has no data remaining
-        return true;
-    } else if(itr == keyEnd) {
-        // in this case, just clear terminator flag so that 'ham' is no longer a sub-key of 'hamster'.
-        assert(node->isTerminator());
+    // If removeKey returns a node and the node is not a terminator
+    // drop the value.
+    if (node) {
         node->deleteValue();
-        node->setTerminates(false);
-        perfomedDelete = true;
-        return false;
     }
-    return false;
 }
-#endif
+
+template <typename V>
+void TrieMap<char, V>::remove(const std::string& key) {
+    TrieMapNode<char, V>* node = this->removeKey(key);
+    // If removeKey returns a node and the node is not a terminator
+    // drop the value.
+    if (node) {
+        node->deleteValue();
+    }
+}
