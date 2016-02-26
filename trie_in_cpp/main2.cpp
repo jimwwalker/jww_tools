@@ -3,13 +3,8 @@
 
 
 #include "gtest/gtest.h"
-/*
-25    CouchstoreTest
-26        * Global test class for most of the couchstore tests.
-27        * Auto-cleans when the test is complete.
-28          a) If db is not null, closes the db
-29          b) removes testfile.couch.
-30*/
+
+
 class TrieTest : public ::testing::Test {
 };
 
@@ -101,26 +96,102 @@ TEST_F(TrieTest, insert_2_exists_f) {
     EXPECT_TRUE(t.exists("string"));
 }
 
-TEST_F(TrieTest, insert_remove_exists_1) {
+TEST_F(TrieTest, insert_1_prefixExists_a) {
+    Trie<char> t;
+    t.insert("string");
+    EXPECT_TRUE(t.prefixExists("string"));
+}
+
+TEST_F(TrieTest, insert_1_prefixExists_b) {
+    Trie<char> t;
+    t.insert("string and a prefix");
+    EXPECT_FALSE(t.prefixExists("string"));
+}
+
+TEST_F(TrieTest, insert_2_prefixExists_a) {
+    Trie<char> t;
+    t.insert("string");
+    t.insert("string");
+    EXPECT_TRUE(t.prefixExists("string"));
+}
+
+TEST_F(TrieTest, insert_2_prefixExists_b) {
+    Trie<char> t;
+    t.insert("string");
+    t.insert("string and a prefix");
+    EXPECT_TRUE(t.prefixExists("string"));
+}
+
+TEST_F(TrieTest, insert_2_prefixExists_c) {
+    Trie<char> t;
+    t.insert("string and a prefix");
+    t.insert("string");
+    EXPECT_TRUE(t.prefixExists("string"));
+}
+
+TEST_F(TrieTest, insert_2_prefixExists_d) {
+    Trie<char> t;
+    t.insert("beer::");
+    t.insert("brewery::");
+    EXPECT_TRUE(t.prefixExists("beer::budweiser"));
+    EXPECT_TRUE(t.prefixExists("brewery::little-valley"));
+    EXPECT_FALSE(t.prefixExists("brewer::little-valley"));
+}
+
+TEST_F(TrieTest, insert_2_prefixExists_f) {
+    Trie<char> t;
+    t.insert("drink::");
+    t.insert("drink::beer");
+    t.insert("drink::beer::strong");
+    EXPECT_TRUE(t.prefixExists("drink::coke"));
+    EXPECT_TRUE(t.prefixExists("drink::beer::little-valley"));
+}
+
+TEST_F(TrieTest, insert_erase_exists_1) {
     Trie<char> t;
     t.insert("string");
     EXPECT_TRUE(t.exists("string"));
-    t.remove("string");
+    t.erase("string");
     EXPECT_FALSE(t.exists("string"));
 }
 
-TEST_F(TrieTest, insert_remove_exists_2) {
+TEST_F(TrieTest, insert_erase_exists_2) {
     Trie<char> t;
     t.insert("string");
-    t.insert("stringSTRING");
+    t.insert("string and some more");
     EXPECT_TRUE(t.exists("string"));
-    EXPECT_TRUE(t.exists("stringSTRING"));
-    t.remove("string");
-    EXPECT_FALSE(t.exists("string"));
-    EXPECT_TRUE(t.exists("stringSTRING"));
+    EXPECT_TRUE(t.exists("string and some more"));
+    t.erase("string");
+    EXPECT_FALSE(t.exists("string")); // string is not a key anymore
+    EXPECT_TRUE(t.exists("string and some more"));
 }
 
-TEST_F(TrieTest, maaap_insert_remove_find_2) {
+TEST_F(TrieTest, insert_erase_exists_3) {
+    Trie<char> t;
+    t.insert("string");
+    t.erase("string1");
+    EXPECT_TRUE(t.exists("string"));
+}
+
+TEST_F(TrieTest, insert_erase_exists_4) {
+    Trie<char> t;
+    t.insert("string");
+    t.erase("stringstring");
+    EXPECT_TRUE(t.exists("string"));
+}
+
+TEST_F(TrieTest, insert_erase_prefixExists_1) {
+    Trie<char> t;
+    t.insert("beer::");
+    t.insert("beers::");
+    EXPECT_TRUE(t.prefixExists("beer::bud"));
+    EXPECT_TRUE(t.prefixExists("beers::bud"));
+    t.erase("beer::");
+    EXPECT_FALSE(t.prefixExists("beer::bud"));
+    EXPECT_TRUE(t.prefixExists("beers::bud"));
+}
+
+TEST_F(TrieTest, maaap_insert_erase_find_2) {
     TrieMap<char, int> t;
     t.insert("string", 7);
     t.insert("bring", 7);

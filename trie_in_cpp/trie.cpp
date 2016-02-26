@@ -19,7 +19,7 @@ template <typename K>
 TrieNode<K>* TrieNode<K>::findChild(K id) {
     auto itr = children.find(id);
     if (itr != children.end()) {
-        return itr->second;
+        return itr->second.get();
     }
     return nullptr;
 }
@@ -27,7 +27,7 @@ TrieNode<K>* TrieNode<K>::findChild(K id) {
 template <typename K>
 void TrieNode<K>::addChild(TrieNode* newNode) {
     // validate newNode exists?
-    children[newNode->getId()] = newNode;
+    children[newNode->getId()] = std::unique_ptr<TrieNode>(newNode);
 }
 
 template <typename K>
@@ -73,12 +73,13 @@ TrieImpl<K,N>::TrieImpl() {
  */
 template <typename Container, typename NodeType>
 NodeType* TrieImpl<Container, NodeType>::findKey(const Container& key) {
+    std::lock_guard<std::mutex> lg(lock);
     NodeType* node = &root;
 
     // Iterate from root looking for each element of key
     for (auto element : key) {
         NodeType* n = nullptr;
-        if ((n = static_cast<NodeType*>(node->findChild(element))) == nullptr) {
+        if ((n = node->findChild(element)) == nullptr) {
             return nullptr;
         }
         node = n;
@@ -90,6 +91,7 @@ NodeType* TrieImpl<Container, NodeType>::findKey(const Container& key) {
 
 template <typename Container, typename NodeType>
 NodeType* TrieImpl<Container, NodeType>::insertKey(const Container& key) {
+    std::lock_guard<std::mutex> lg(lock);
     NodeType* node = &root;
 
     // 1. Walk the trie looking for each element of key.
@@ -103,7 +105,7 @@ NodeType* TrieImpl<Container, NodeType>::insertKey(const Container& key) {
     }
 
     std::cout << "Ended search at " << *it <<std::endl;
-    std::cout << "Node = " << node->getId() << std::endl;
+    std::cout << "Node = " << (node == &root ? '*' : node->getId()) << std::endl;
 
     // 2. If the key has more elements, add them to the node.
     if (it != key.end()) {
@@ -124,12 +126,14 @@ NodeType* TrieImpl<Container, NodeType>::insertKey(const Container& key) {
 
 template <typename Container, typename NodeType>
 NodeType* TrieImpl<Container, NodeType>::prefixFindKey(const Container& key) {
+    std::lock_guard<std::mutex> lg(lock);
     NodeType* node = &root;
 
     // Iterate from root looking for each element of key
     for (auto element : key) {
         NodeType* n = nullptr;
         if ((n = static_cast<NodeType*>(node->findChild(element))) == nullptr) {
+            // node doesn't contain element
             return nullptr;
         }
 
@@ -146,7 +150,8 @@ NodeType* TrieImpl<Container, NodeType>::prefixFindKey(const Container& key) {
 }
 
 template <typename Container, typename NodeType>
-NodeType* TrieImpl<Container, NodeType>::removeKey(const Container& key) {
+NodeType* TrieImpl<Container, NodeType>::eraseKey(const Container& key) {
+    std::lock_guard<std::mutex> lg(lock);
     NodeType* node = &root;
     bool perfomedDelete = false;
     auto itr = key.begin();
@@ -190,7 +195,6 @@ NodeType* TrieImpl<Container, NodeType>::removeKey(const Container& key) {
             return n;
         } else if (!n) {
             root.unlinkChild(child->getId());
-            delete child;
         }
     }
     return nullptr;
@@ -223,7 +227,6 @@ NodeType* TrieImpl<Container, NodeType>::deleteNode(NodeType* node,
         if ((n=deleteNode(child, key, ++itr)) == nullptr) {
             std::cout << " Unlink [" << child->getId() << "] from [" << node->getId() << "]" << std::endl;
             node->unlinkChild(child->getId());
-            delete child;
      //       perfomedDelete = true;
             if (!node->hasChildren() && !node->isTerminator()) {
                 std::cout << " Return nullp A [" << node->getId() << "]" <<std::endl;
@@ -249,8 +252,6 @@ NodeType* TrieImpl<Container, NodeType>::deleteNode(NodeType* node,
         std::cout << "clear terminates key is ended - returning " << node->getId() << std::endl;
         return node;
     }
-
-    // what is this case???
 
     std::cout << "Final return [" << node->getId() << "]" << (itr == key.end()) << std::endl;
     return node;
@@ -294,12 +295,12 @@ bool Trie<char>::prefixExists(const std::string& key) {
 }
 
 template <typename K>
-void Trie<K>::remove(const std::vector<K>& key) {
-    this->removeKey(key);
+void Trie<K>::erase(const std::vector<K>& key) {
+    this->eraseKey(key);
 }
 
-void Trie<char>::remove(const std::string& key) {
-    this->removeKey(key);
+void Trie<char>::erase(const std::string& key) {
+    this->eraseKey(key);
 }
 
 template <typename K, typename V>
@@ -369,7 +370,7 @@ typename TrieMap<char, V>::iterator TrieMap<char, V>::prefixFind(const std::stri
 }
 
 template <typename K, typename V>
-void TrieMap<K, V>::remove(const std::vector<K>& key) {
+void TrieMap<K, V>::erase(const std::vector<K>& key) {
     TrieMapNode<K, V>* node = this->removeKey(key);
 
     // If removeKey returns a node and the node is not a terminator
@@ -380,7 +381,7 @@ void TrieMap<K, V>::remove(const std::vector<K>& key) {
 }
 
 template <typename V>
-void TrieMap<char, V>::remove(const std::string& key) {
+void TrieMap<char, V>::erase(const std::string& key) {
     TrieMapNode<char, V>* node = this->removeKey(key);
     // If removeKey returns a node and the node is not a terminator
     // drop the value.

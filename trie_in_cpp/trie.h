@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <mutex>
 
 #pragma once
 
@@ -77,7 +78,7 @@ public:
 
 protected:
     K identifier;
-    std::unordered_map<K, TrieNode*> children;
+    std::unordered_map<K, std::unique_ptr<TrieNode> > children;
     bool terminates;
 };
 
@@ -91,7 +92,6 @@ public:
     TrieMapNode(K id)
       : TrieNode<K>(id) {}
 
-    //~TrieMapNode();
     TrieMapNode<K, V>* findChild(K id) {
         return reinterpret_cast<TrieMapNode<K, V>* >(TrieNode<K>::findChild(id));
     }
@@ -110,23 +110,17 @@ private:
     V value;
 };
 
-template <typename Container, typename NodeType>
+template <typename Container, typename ContainerItr, typename NodeType>
 class TrieImpl {
-public:
-    /**
-        Construct a Trie.
-    **/
-    TrieImpl();
-
 protected:
 
-    NodeType* findKey(const Container& key);
+    NodeType* findKey(const ContainerItr begin, const ContainerItr end);
 
     NodeType* insertKey(const Container& key);
 
-    NodeType* prefixFindKey(const Container& key);
+    NodeType* prefixFindKey(const ContainerItr begin, const ContainerItr end);
 
-    NodeType* removeKey(const Container& key);
+    NodeType* eraseKey(const Container& key);
 
 private:
 
@@ -135,19 +129,24 @@ private:
                          typename Container::const_iterator& itr);
 
     NodeType root;
+
+    // coarse grain locking for safe shared usage
+    std::mutex lock;
 };
 
 /**
  * generic Trie which works on a std::vector of K
  */
 template <typename K>
-class Trie : public TrieImpl<std::vector<K>, TrieNode<K> > {
+class Trie : public TrieImpl<std::vector<K>, typename std::vector<K>::iterator, TrieNode<K> > {
 public:
 
     /**
-        Does key exist in trie?
+        Does a key exist?
+        Pass the start and end of a key to search for.
     **/
-    bool exists(const std::vector<K>& key);
+    bool exists(const typename std::vector<K>::iterator begin,
+                const typename std::vector<K>::iterator end);
 
     /**
         Insert an item into the Trie
@@ -161,25 +160,27 @@ public:
      *  prefixFind("ham::small") -> true
      *  prefixFind("hatter") -> false
      */
-    bool prefixExists(const std::vector<K>& key);
+    bool prefixExists(const typename std::vector<K>::iterator begin,
+                      const typename std::vector<K>::iterator end);
 
     /**
-     * Remove key from Trie.
+     * Erase key from Trie.
      */
-    void remove(const std::vector<K>& key);
+    void erase(const std::vector<K>& key);
 };
 
 /**
  * char/std::std::string specialisation of Trie
  */
 template <>
-class Trie<char> : public TrieImpl<std::string, TrieNode<char> > {
+class Trie<char> : public TrieImpl<std::string, const char*, TrieNode<char> > {
 public:
 
     /**
-        Does key exists?
+        Does a key exist?
+        Pass the start and end of a key to search for.
     **/
-    bool exists(const std::string& key);
+    bool exists(const char* begin, const char* end);
 
     /**
         Insert an item into the Trie
@@ -193,19 +194,21 @@ public:
      *  prefixFind("ham::small") -> true
      *  prefixFind("hatter") -> false
      */
-    bool prefixExists(const std::string& key);
+    bool prefixExists(const char* begin, const char* end);
 
     /**
-     * Remove key from Trie.
+     * Erase key from Trie.
      */
-    void remove(const std::string& key);
+    void erase(const std::string& key);
 };
 
 /**
  * generic Trie map which works on a std::vector of K mapped to V
  */
 template <typename K, typename V>
-class TrieMap : public TrieImpl<std::vector<K>, TrieMapNode<K, V> >  {
+class TrieMap : public TrieImpl<std::vector<K>,
+                                typename std::vector<K>::iterator,
+                                TrieMapNode<K, V> >  {
 public:
 
     class iterator {
@@ -239,10 +242,10 @@ public:
     }
 
     /**
-        Find key/value.
-        Return true if found and returns value via 2nd parameter
+        Find key (begin/end) return iterator to value
     **/
-    iterator find(const std::vector<K>& key);
+    iterator find(const typename std::vector<K>::iterator begin,
+                  const typename std::vector<K>::iterator end);
     /**
         Insert key with value
     **/
@@ -255,19 +258,22 @@ public:
      *  prefixFind("ham::small") -> true, 99
      *  prefixFind("hatter") -> false
      */
-    iterator prefixFind(const std::vector<K>& key);
+    iterator prefixFind(const typename std::vector<K>::iterator begin,
+                        const typename std::vector<K>::iterator end);
 
     /**
-     * Remove key from TrieMap.
+     * Erase key from TrieMap.
      */
-    void remove(const std::vector<K>& key);
+    void erase(const std::vector<K>& key);
 };
 
 /**
  * specialised Trie map for char which works on a std::string mapped to V
  */
 template <typename V>
-class TrieMap<char, V> : public TrieImpl<std::string, TrieMapNode<char, V> >  {
+class TrieMap<char, V> : public TrieImpl<std::string,
+                                         char*,
+                                         TrieMapNode<char, V> >  {
 public:
 
     class iterator {
@@ -304,7 +310,7 @@ public:
         Find key/value.
         Return true if found and returns value via 2nd parameter
     **/
-    iterator find(const std::string& key);
+    iterator find(const char* begin, const char* end);
 
     /**
         Insert key with value
@@ -318,12 +324,12 @@ public:
      *  prefixFind("ham::small") -> true, 99
      *  prefixFind("hatter") -> false
      */
-    iterator prefixFind(const std::string& key);
+    iterator prefixFind(const char* begin, const char* end);
 
     /**
-     * Remove key from TrieMap.
+     * Erase key from TrieMap.
      */
-    void remove(const std::string& key);
+    void erase(const std::string& key);
 };
 
-#include "Trie.cpp"
+#include "trie.cc"
