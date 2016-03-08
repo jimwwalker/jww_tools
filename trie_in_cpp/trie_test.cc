@@ -36,7 +36,7 @@ public:
             case 1: init1(); break;
             case 2: init2(); break;
             case 3: init3(); break;
-            default : std::invalid_argument( "invalid init parameter" );
+            default : throw std::invalid_argument( "invalid init parameter" );
         }
     }
     // 0 to 99
@@ -75,7 +75,7 @@ public:
             case 1: init1(); break;
             case 2: init2(); break;
             case 3: init3(); break;
-            default : std::invalid_argument( "invalid init parameter" );
+            default : throw std::invalid_argument( "invalid init parameter" );
         }
     }
 
@@ -156,7 +156,7 @@ TYPED_TEST(TrieTest, insert_1_exists_d) {
 
 TYPED_TEST(TrieTest, insert_3_exists_a) {
     Trie<TypeParam> t;
-    // insert many and check they each exist (interleaved)
+    // insert "many" and check they each exist (interleaved)
     for(int n: {1, 2}) {
         TestData<TypeParam> d(n);
         t.insert(d.getData());
@@ -166,7 +166,7 @@ TYPED_TEST(TrieTest, insert_3_exists_a) {
 
 TYPED_TEST(TrieTest, insert_3_exists_b) {
     Trie<TypeParam> t;
-    // insert many and check they each exist
+    // insert "many" and check they each exist
     for(int n: {1, 2, 3}) {
         TestData<TypeParam> d(n);
         t.insert(d.getData());

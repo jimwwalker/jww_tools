@@ -1,14 +1,7 @@
 
 /**
-    Container style Trie implementation (C++)
-
-    Supports a key of T[] (using std::std::vector)
-
-    E.g. a tradional C std::string char[] requires a std::vector<char>
-
-    Written because doing is my favourite way of learning.
-
-    TODO: Add iterator interface and full destructor
+    Container style Trie implementation (C++) with specialisation for
+    the main use-case, char
 
     Jim Walker (jim.w.walker@gmail.com)
 **/
@@ -18,97 +11,8 @@
 #include <vector>
 #include <memory>
 #include <mutex>
-
-#pragma once
-
-template <typename K>
-class TrieNode {
-public:
-
-    TrieNode();
-
-    TrieNode(K id);
-
-    /**
-        Find the child node which matches 'id'.
-        Return nullptr if no matching child is found.
-    **/
-    TrieNode<K>* findChild(K id);
-
-    /**
-        Add a child node to this node with id.
-        The new node is returned.
-    **/
-    void addChild(TrieNode* newNode);
-
-    /**
-        Returns true if this node has any children.
-        A leaf node has no children.
-    **/
-    bool hasChildren();
-
-    /**
-        Return the node's id
-    **/
-    K getId() const {
-        return identifier;
-    }
-
-    /**
-        Returns the number of children this node has.
-    **/
-    int childCount();
-
-    /**
-        Set the terminates flag.
-        Terminates should be set if this node marks the end of a key.
-    **/
-    void setTerminates(bool value);
-
-    /**
-        Returns the value of the terminates flag.
-    **/
-    bool isTerminator();
-
-    /**
-        Break the link from this node to a child node
-        which has a matching id.
-    **/
-    void unlinkChild(K id);
-
-protected:
-    K identifier;
-    std::unordered_map<K, std::unique_ptr<TrieNode> > children;
-    bool terminates;
-};
-
-template <typename K, typename V>
-class TrieMapNode : public TrieNode<K> {
-
-public:
-    TrieMapNode()
-      : TrieNode<K>() {}
-
-    TrieMapNode(K id)
-      : TrieNode<K>(id) {}
-
-    TrieMapNode<K, V>* findChild(K id) {
-        return reinterpret_cast<TrieMapNode<K, V>* >(TrieNode<K>::findChild(id));
-    }
-
-    V getValue() const {
-        return value;
-    }
-
-    V& getReferenceValue() {
-        return value;
-    }
-
-    void setValue(V value);
-
-private:
-    V value;
-};
+#include <array>
+#include "utilities/trienode.h"
 
 template <typename Container, typename ContainerItr, typename NodeType>
 class TrieImpl {
